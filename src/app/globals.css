@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/* ── Design tokens ─────────────────────────────────────────── */
+@theme inline {
+  /* Brand palette – violet + pink */
+  --color-brand-50:  #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+
+  --color-accent-400: #f472b6;
+  --color-accent-500: #ec4899;
+  --color-accent-600: #db2777;
+
+  /* Semantic tokens */
+  --color-background: #ffffff;
+  --color-foreground: #0f0f13;
+  --color-muted:      #f4f4f8;
+  --color-muted-fg:   #6b7280;
+  --color-border:     #e5e7eb;
+  --color-ring:       #8b5cf6;
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html  { scroll-behavior: smooth; }
+  body  {
+    background-color: #ffffff;
+    color: #0f0f13;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar       { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #f1f1f1; }
+  ::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #8b5cf6; }
+}
+
+/* ── Utilities ─────────────────────────────────────────────── */
+@layer utilities {
+  .gradient-text {
+    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .gradient-brand  { background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%); }
+  .gradient-soft   { background: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%); }
+  .gradient-hero   { background: linear-gradient(150deg, #ede9fe 0%, #fce7f3 55%, #e0e7ff 100%); }
+
+  .glass {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.4);
+  }
+
+  .card-lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .card-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px -12px rgba(124,58,237,0.18);
+  }
+
+  .section { padding-block: 5rem; }
+}
+
+@media (min-width: 768px) {
+  .section { padding-block: 7rem; }
+}
+
+/* ── Keyframes ─────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(-3deg); }
+  50%       { transform: translateY(-18px) rotate(3deg); }
+}
+@keyframes blob {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  50%       { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+}
+@keyframes bounce-in {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.06); }
+  80%  { transform: scale(0.97); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+
+.animate-float     { animation: float     3.8s ease-in-out infinite; }
+.animate-blob      { animation: blob      7s   ease-in-out infinite; }
+.animate-bounce-in { animation: bounce-in 0.65s ease-out both; }
