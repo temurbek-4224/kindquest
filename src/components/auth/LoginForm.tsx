@@ -164,9 +164,9 @@ export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <label className="text-sm font-semibold text-gray-700">{UI.password[l]}</label>
-              <span className="text-xs text-violet-600 hover:underline cursor-pointer">
+              <Link href="/forgot-password" className="text-xs text-violet-600 hover:underline">
                 {UI.forgot[l]}
-              </span>
+              </Link>
             </div>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />

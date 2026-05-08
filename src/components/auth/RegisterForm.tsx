@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Eye, EyeOff, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client';
+import { getSiteUrl } from '@/lib/supabase/get-site-url';
 import { useLanguage } from '@/context/LanguageContext';
 
 const UI = {
@@ -86,7 +87,7 @@ export default function RegisterForm() {
         password,
         options: {
           data: { full_name: name.trim() },
-          // emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${getSiteUrl()}/auth/callback`,
         },
       });
 
