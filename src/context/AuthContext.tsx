@@ -53,26 +53,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    /* Initial session fetch */
+    /*
+     * Safety net: force loading=false after 4 seconds so the navbar never
+     * gets stuck showing a skeleton permanently.
+     *
+     * Why this is needed:
+     *   When the access-token in cookies is expired, getSession() and the
+     *   onAuthStateChange INITIAL_SESSION event both try to refresh the token
+     *   by calling Supabase Auth over the network. On a slow or cold-starting
+     *   free-tier project this can hang indefinitely, keeping loading=true
+     *   forever and hiding the Sign-in / Sign-up buttons.
+     */
+    const safetyTimer = setTimeout(() => {
+      setLoading((prev) => {
+        if (prev) {
+          console.warn('[AuthContext] Auth init timed out after 4 s — forcing loading=false');
+        }
+        return false;
+      });
+    }, 4000);
+
+    /* Subscribe to auth state changes FIRST — fires INITIAL_SESSION quickly */
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      clearTimeout(safetyTimer);
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    /* Initial session fetch — also resolves loading */
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('[AuthContext] getSession error:', error.message);
       }
+      clearTimeout(safetyTimer);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    /* Subscribe to auth state changes (login, logout, token refresh) */
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, [supabase]);
 
   /* Fetch admin role whenever the user changes */
@@ -86,7 +111,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('[AuthContext] profile role fetch error:', error.message);
+        }
         setIsAdmin(data?.role === 'admin');
       });
   }, [user, supabase]);

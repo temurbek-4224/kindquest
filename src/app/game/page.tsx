@@ -85,6 +85,7 @@ export default function GamePage() {
   const supabase = useMemo(() => createClient(), []);
 
   const [fetchError, setFetchError] = useState('');
+  const [fetchErrorDetail, setFetchErrorDetail] = useState('');
   const l = language;
 
   /* ── Fetch questions from Supabase → start game ─────────── */
@@ -102,12 +103,14 @@ export default function GamePage() {
         if (cancelled) return;
 
         if (error) {
-          console.error('[GamePage] fetch error:', error.message);
-          setFetchError(error.message);
+          console.error('[GamePage] Supabase fetch error:', error.message, error.code, error.details);
+          setFetchError('error');
+          setFetchErrorDetail(error.message);
           return;
         }
 
         if (!data || data.length === 0) {
+          console.warn('[GamePage] questions table returned 0 rows — table may be empty or RLS is blocking reads');
           setFetchError('empty');
           return;
         }
@@ -137,14 +140,36 @@ export default function GamePage() {
 
     /* Error state: DB returned nothing or query failed */
     if (fetchError) {
+      const isDbError = fetchError === 'error';
+      const errorMsg: Record<string, { uz: string; ru: string; en: string }> = {
+        title: {
+          uz: isDbError ? 'Xatolik yuz berdi' : UI.noQ.uz,
+          ru: isDbError ? 'Произошла ошибка' : UI.noQ.ru,
+          en: isDbError ? 'Something went wrong' : UI.noQ.en,
+        },
+        hint: {
+          uz: isDbError
+            ? "Supabase bilan bog'lanishda muammo. Keyinroq qayta urinib ko'ring."
+            : UI.noQHint.uz,
+          ru: isDbError
+            ? 'Проблема с подключением к Supabase. Попробуйте позже.'
+            : UI.noQHint.ru,
+          en: isDbError
+            ? 'Could not connect to the database. Please try again later.'
+            : UI.noQHint.en,
+        },
+      };
       return (
         <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-6 text-center bg-gradient-to-br from-violet-50 via-white to-pink-50">
           <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-violet-100">
             <BookOpen className="h-10 w-10 text-violet-400" />
           </div>
           <div className="max-w-sm">
-            <h2 className="text-xl font-extrabold text-gray-800 mb-2">{UI.noQ[l]}</h2>
-            <p className="text-sm text-gray-500 mb-6">{UI.noQHint[l]}</p>
+            <h2 className="text-xl font-extrabold text-gray-800 mb-2">{errorMsg.title[l]}</h2>
+            <p className="text-sm text-gray-500 mb-2">{errorMsg.hint[l]}</p>
+            {isDbError && fetchErrorDetail && (
+              <p className="text-xs text-red-400 font-mono break-all mb-4">{fetchErrorDetail}</p>
+            )}
           </div>
           <Link
             href="/"
