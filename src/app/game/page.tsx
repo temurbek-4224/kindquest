@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, BookOpen } from 'lucide-react';
@@ -81,20 +81,37 @@ export default function GamePage() {
     isLastQuestion,
   } = useGame();
 
-  /* Stable Supabase client — one instance per component mount */
-  const supabase = useMemo(() => createClient(), []);
+  /*
+   * Use the module-level singleton — same instance as AuthContext and every
+   * other component.  No useMemo needed; createClient() always returns _client.
+   * This prevents the AbortError caused by multiple instances stealing the
+   * Web Locks API lock from each other.
+   */
+  const supabase = createClient();
 
   const [fetchError, setFetchError] = useState('');
   const [fetchErrorDetail, setFetchErrorDetail] = useState('');
   const l = language;
 
+  /*
+   * Guard against duplicate concurrent fetches.
+   * useRef persists across renders without triggering re-renders.
+   * We check this before starting a new fetch so React Strict Mode
+   * double-invocation in dev doesn't fire two simultaneous requests.
+   */
+  const fetchStarted = useRef(false);
+
   /* ── Fetch questions from Supabase → start game ─────────── */
   useEffect(() => {
     /* Only kick off when the game hasn't started yet */
     if (state.status !== 'idle') return;
+    /* Prevent duplicate concurrent fetches (Strict Mode, fast re-mounts) */
+    if (fetchStarted.current) return;
+    fetchStarted.current = true;
 
     let cancelled = false;
     setFetchError('');
+    setFetchErrorDetail('');
 
     supabase
       .from('questions')
@@ -103,15 +120,25 @@ export default function GamePage() {
         if (cancelled) return;
 
         if (error) {
-          console.error('[GamePage] Supabase fetch error:', error.message, error.code, error.details);
+          console.error(
+            '[GamePage] Supabase fetch error:',
+            error.message,
+            '| code:', error.code,
+            '| details:', error.details,
+          );
           setFetchError('error');
           setFetchErrorDetail(error.message);
+          fetchStarted.current = false; // allow retry on next mount
           return;
         }
 
         if (!data || data.length === 0) {
-          console.warn('[GamePage] questions table returned 0 rows — table may be empty or RLS is blocking reads');
+          console.warn(
+            '[GamePage] questions table returned 0 rows — ' +
+            'table may be empty or RLS is blocking reads for the anon role.',
+          );
           setFetchError('empty');
+          fetchStarted.current = false;
           return;
         }
 

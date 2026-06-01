@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
   useCallback,
-  useMemo,
   type ReactNode,
 } from 'react';
 import { type User, type Session } from '@supabase/supabase-js';
@@ -30,12 +29,14 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   /*
-   * IMPORTANT: createClient() must be memoized so we get ONE stable instance
-   * for the lifetime of this provider. Creating it on every render leaks
-   * the onAuthStateChange subscription and causes unpredictable behaviour.
+   * createClient() is now a module-level singleton (see lib/supabase/client.ts).
+   * Calling it here returns the same object reference on every render —
+   * no useMemo needed, no risk of creating duplicate Supabase instances.
+   *
+   * This is critical: createBrowserClient uses the Web Locks API for
+   * session management. Multiple instances → lock-stealing → AbortError.
    */
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   const [user,    setUser]    = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -54,15 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     /*
-     * Safety net: force loading=false after 4 seconds so the navbar never
-     * gets stuck showing a skeleton permanently.
-     *
-     * Why this is needed:
-     *   When the access-token in cookies is expired, getSession() and the
-     *   onAuthStateChange INITIAL_SESSION event both try to refresh the token
-     *   by calling Supabase Auth over the network. On a slow or cold-starting
-     *   free-tier project this can hang indefinitely, keeping loading=true
-     *   forever and hiding the Sign-in / Sign-up buttons.
+     * Safety net: force loading=false after 4 s so the navbar never stays
+     * frozen on a skeleton when Supabase is slow (free-tier cold start,
+     * expired token refresh hanging, etc.).
      */
     const safetyTimer = setTimeout(() => {
       setLoading((prev) => {
@@ -73,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     }, 4000);
 
-    /* Subscribe to auth state changes FIRST — fires INITIAL_SESSION quickly */
+    /* Subscribe FIRST so INITIAL_SESSION fires before getSession resolves */
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -83,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    /* Initial session fetch — also resolves loading */
+    /* Also call getSession() explicitly in case onAuthStateChange is slow */
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('[AuthContext] getSession error:', error.message);
@@ -98,9 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount — supabase is a stable singleton reference
 
-  /* Fetch admin role whenever the user changes */
+  /* Fetch admin role whenever the authenticated user changes */
   useEffect(() => {
     if (!user || !isSupabaseConfigured) {
       setIsAdmin(false);
@@ -117,11 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setIsAdmin(data?.role === 'admin');
       });
-  }, [user, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // supabase is stable singleton — only re-run when user changes
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // supabase is stable singleton
 
   return (
     <AuthContext.Provider value={{ user, session, loading, isAdmin, signOut }}>
