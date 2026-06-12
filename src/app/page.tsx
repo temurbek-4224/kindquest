@@ -10,6 +10,7 @@ import {
   Trophy,
   Zap,
   Star,
+  Gamepad2,
 } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -64,6 +65,30 @@ const FLOATS = [
   { e: '💡', t: '60%', l: '55%', d: 3.4 },
   { e: '🌟', t: '85%', l: '35%', d: 4.3 },
   { e: '🤝', t: '52%', l: '25%', d: 3.9 },
+];
+
+/* ─────────────────────── Mini-games data ───────────────────── */
+const MINI_GAMES_META = {
+  heading: { uz: "Mini O'yinlar",          ru: 'Мини-игры',                    en: 'Mini-Games'           },
+  sub:     {
+    uz: "Bilimingizni qisqa o'yinlar bilan sinab ko'ring!",
+    ru: 'Проверьте свои знания в быстрых мини-играх!',
+    en: 'Test your knowledge with quick mini-games!',
+  },
+};
+
+const MINI_GAMES = [
+  {
+    href:     '/mini-game',
+    icon:     '🎭',
+    gradient: 'from-pink-400 via-rose-400 to-orange-400',
+    shadow:   'shadow-pink-200',
+    badge:    { uz: 'Yangi!', ru: 'Новинка!', en: 'New!' },
+    title:    { uz: "Odobli yoki odobsiz?",                ru: 'Вежливо или невежливо?',             en: 'Polite or Impolite?'         },
+    sub:      { uz: "Harakatni to'g'ri guruhga ajrating",  ru: 'Распредели действия по группам',     en: 'Sort behaviours into groups' },
+    count:    { uz: "10 ta karta · Tez o'yin",              ru: '10 карточек · Быстрая игра',         en: '10 cards · Quick play'       },
+    cta:      { uz: "O'ynash boshlash",                    ru: 'Начать играть',                      en: 'Start Playing'               },
+  },
 ];
 
 /* ─────────────────────── Page ───────────────────────────────── */
@@ -308,6 +333,83 @@ export default function HomePage() {
                 </motion.div>
               ))}
             </motion.div>
+          </div>
+        </section>
+
+        {/* ════════════════════════ MINI-GAMES ════════════════ */}
+        <section className="section bg-white">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+
+            <motion.div
+              className="text-center mb-10"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-4 py-1.5 text-sm font-semibold text-pink-700 mb-4">
+                <Gamepad2 className="h-4 w-4" />
+                {MINI_GAMES_META.heading[language]}
+              </div>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
+                {MINI_GAMES_META.sub[language]}
+              </h2>
+            </motion.div>
+
+            <motion.div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              variants={stagger}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-40px' }}
+            >
+              {MINI_GAMES.map((game, i) => (
+                <motion.div
+                  key={i}
+                  variants={fadeUp}
+                  whileHover={{ y: -7 }}
+                  transition={{ duration: 0.25 }}
+                  className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br ${game.gradient} p-7 shadow-xl ${game.shadow} hover:shadow-2xl transition-all duration-300`}
+                >
+                  {/* New badge */}
+                  <span className="absolute top-4 right-4 rounded-full bg-white/25 px-2.5 py-0.5 text-xs font-bold text-white">
+                    {game.badge[language]}
+                  </span>
+
+                  {/* Icon */}
+                  <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 text-4xl shadow-inner select-none">
+                    {game.icon}
+                  </div>
+
+                  {/* Text */}
+                  <h3 className="text-xl font-extrabold text-white mb-1 leading-snug">
+                    {game.title[language]}
+                  </h3>
+                  <p className="text-sm text-white/80 mb-1 leading-relaxed">
+                    {game.sub[language]}
+                  </p>
+                  <p className="text-xs text-white/60 mb-5 font-medium">
+                    {game.count[language]}
+                  </p>
+
+                  {/* CTA */}
+                  <Link href={game.href}>
+                    <motion.button
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-2.5 text-sm font-bold text-pink-600 shadow-md hover:bg-white/95 transition-colors"
+                    >
+                      <Play className="h-4 w-4 fill-pink-500 text-pink-500" />
+                      {game.cta[language]}
+                    </motion.button>
+                  </Link>
+
+                  {/* Decorative circle */}
+                  <div className="pointer-events-none absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-white/10 group-hover:bg-white/15 transition-colors" />
+                </motion.div>
+              ))}
+            </motion.div>
+
           </div>
         </section>
 
