@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useGame }     from '@/context/GameContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { createClient } from '@/lib/supabase/client';
+import type { Language } from '@/lib/i18n';
 import type { DBQuestion } from '@/types/admin';
 import type { GameQuestion } from '@/types/game';
 import ProgressBar from '@/components/game/ProgressBar';
@@ -47,24 +48,94 @@ function mapDBtoGameQuestion(row: DBQuestion): GameQuestion {
   };
 }
 
+/* ── 10 named stages (mapped by question index 0–9) ── */
+const STAGE_NAMES: Record<Language, string[]> = {
+  uz: [
+    'Oilada hurmat',
+    'Kattalarga salom berish',
+    "Do'stlarga yordam berish",
+    'Navbat kutish',
+    "Rostgo'ylik",
+    'Maktabda odob',
+    "Jamoat joyida o'zini tutish",
+    'Kichiklarga mehribonlik',
+    "Kechirim so'rash",
+    "Yakuniy topshiriq",
+  ],
+  ru: [
+    'Уважение в семье',
+    'Приветствие взрослых',
+    'Помощь друзьям',
+    'Ожидание очереди',
+    'Честность',
+    'Поведение в школе',
+    'Поведение в общ. местах',
+    'Доброта к малышам',
+    'Просьба о прощении',
+    'Финальное испытание',
+  ],
+  en: [
+    'Respect at Home',
+    'Greeting Elders',
+    'Helping Friends',
+    'Waiting in Line',
+    'Honesty',
+    'School Manners',
+    'Public Behaviour',
+    'Kindness to Children',
+    'Asking Forgiveness',
+    'Final Challenge',
+  ],
+};
+
 /* ── Per-language UI strings ── */
 const UI = {
-  question: { uz: 'Savol',                       ru: 'Вопрос',                 en: 'Question'           },
-  score:    { uz: 'Ball',                         ru: 'Очки',                   en: 'Score'              },
-  next:     { uz: 'Keyingi savol',                ru: 'Следующий вопрос',       en: 'Next Question'      },
-  finish:   { uz: "Natijalarni ko'rish",           ru: 'Смотреть результаты',    en: 'See Results'        },
-  correct:  { uz: "To'g'ri!",                     ru: 'Правильно!',             en: 'Correct!'           },
-  wrong:    { uz: "Noto'g'ri",                    ru: 'Неверно',                en: 'Incorrect'          },
-  explain:  { uz: 'Tushuntirish',                 ru: 'Объяснение',             en: 'Explanation'        },
-  quit:     { uz: 'Chiqish',                      ru: 'Выйти',                  en: 'Quit'               },
-  loading:  { uz: 'Savollar yuklanmoqda…',         ru: 'Загрузка вопросов…',     en: 'Loading questions…' },
-  noQ:      { uz: 'Savollar topilmadi',            ru: 'Вопросы не найдены',     en: 'No questions found' },
-  noQHint:  {
+  /* Progress bar — changed from "Savol" to "Bosqich" (stage) */
+  question: { uz: 'Bosqich',                       ru: 'Этап',                           en: 'Stage'               },
+  score:    { uz: 'Ball',                           ru: 'Очки',                           en: 'Score'               },
+
+  /* Navigation */
+  next:     { uz: 'Keyingi bosqich',                ru: 'Следующий этап',                 en: 'Next Stage'          },
+  finish:   { uz: "Natijalarni ko'rish",             ru: 'Смотреть результаты',            en: 'See Results'         },
+
+  /* Feedback — educational, scenario-game wording */
+  correct:  {
+    uz: "Ajoyib! Sen to'g'ri qaror qabul qilding! +10 mehribonlik balli",
+    ru: 'Отлично! Ты принял верное решение! +10 баллов доброты',
+    en: 'Excellent! You made the right decision! +10 kindness points',
+  },
+  wrong:    {
+    uz: "Bu javob unchalik to'g'ri emas. Keling, nima uchunligini birga ko'rib chiqamiz.",
+    ru: 'Этот ответ не совсем верный. Давайте вместе разберём, почему.',
+    en: "That answer is not quite right. Let's look at the reason together.",
+  },
+
+  explain:   { uz: 'Tushuntirish',                  ru: 'Объяснение',                     en: 'Explanation'         },
+  quit:      { uz: 'Chiqish',                        ru: 'Выйти',                          en: 'Quit'                },
+  loading:   { uz: 'Bosqichlar yuklanmoqda…',         ru: 'Загрузка этапов…',               en: 'Loading stages…'     },
+  noQ:       { uz: 'Savollar topilmadi',              ru: 'Вопросы не найдены',             en: 'No questions found'  },
+  noQHint:   {
     uz: "Admin panelidan savollar qo'shing yoki namuna savollarni yuklang.",
     ru: 'Добавьте вопросы в панели администратора или загрузите примеры.',
     en: 'Add questions from the admin panel or seed the sample questions.',
   },
-  goHome:   { uz: 'Bosh sahifaga',                ru: 'На главную',             en: 'Go Home'            },
+  goHome:    { uz: 'Bosh sahifaga',                  ru: 'На главную',                     en: 'Go Home'             },
+
+  /* Scenario framing labels shown inside GameCard */
+  scenario:  { uz: 'Hayotiy vaziyat',                ru: 'Жизненная ситуация',             en: 'Life Situation'      },
+  choose:    { uz: "To'g'ri qarorni tanlang",        ru: 'Выберите верный ответ',          en: 'Choose the right answer' },
+
+  /* Character instruction banner */
+  character: {
+    uz: "Temurbekga to'g'ri qaror qabul qilishda yordam bering.",
+    ru: "Помогите Тимуру принять правильное решение.",
+    en: "Help Temurbek make the right decision.",
+  },
+  eduBadge: {
+    uz: 'Tarbiyaviy ssenariy',
+    ru: 'Воспит. сценарий',
+    en: 'Edu. Scenario',
+  },
 };
 
 /* ───────────────────────────────────────────────────────────── */
@@ -221,6 +292,10 @@ export default function GamePage() {
     );
   }
 
+  /* Stage name for current question index */
+  const stageNames = STAGE_NAMES[l];
+  const stageName  = stageNames[Math.min(state.currentIndex, stageNames.length - 1)];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-pink-50">
 
@@ -262,15 +337,45 @@ export default function GamePage() {
       {/* ── Game area ── */}
       <main className="mx-auto max-w-2xl px-4 py-8 pb-20">
 
-        {/* Question counter chip */}
+        {/* ── Character instruction banner ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mb-5 flex items-center gap-3 rounded-2xl bg-white border border-violet-100 px-4 py-3 shadow-sm"
+        >
+          {/* Character avatar */}
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl gradient-brand text-2xl shadow-sm select-none">
+            🧒
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-extrabold text-violet-600 uppercase tracking-wide mb-0.5">
+              Temurbek
+            </p>
+            <p className="text-sm font-medium text-gray-600 leading-snug">
+              {UI.character[l]}
+            </p>
+          </div>
+
+          {/* Educational badge — hidden on very small screens */}
+          <span className="shrink-0 hidden sm:inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-700">
+            🎓 {UI.eduBadge[l]}
+          </span>
+        </motion.div>
+
+        {/* Stage counter chip + stage name badge */}
         <motion.div
           key={state.currentIndex}
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="mb-6 flex justify-center"
+          className="mb-6 flex flex-col items-center gap-2"
         >
           <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-4 py-1.5 text-sm font-semibold text-violet-700">
             {state.currentIndex + 1} / {state.questions.length}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1 text-xs font-bold text-pink-700">
+            🎯 {stageName}
           </span>
         </motion.div>
 
@@ -290,6 +395,8 @@ export default function GamePage() {
             explanationLabel={UI.explain[l]}
             correctLabel={UI.correct[l]}
             incorrectLabel={UI.wrong[l]}
+            scenarioLabel={UI.scenario[l]}
+            chooseLabel={UI.choose[l]}
           />
         </AnimatePresence>
       </main>

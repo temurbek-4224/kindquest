@@ -21,6 +21,10 @@ interface GameCardProps {
   explanationLabel: string;
   correctLabel: string;
   incorrectLabel: string;
+  /** "Hayotiy vaziyat" / "Жизненная ситуация" / "Life Situation" */
+  scenarioLabel?: string;
+  /** "To'g'ri qarorni tanlang" / "Выберите верный ответ" / "Choose the right answer" */
+  chooseLabel?: string;
 }
 
 /* Fallback metadata for any unknown category key from the DB */
@@ -39,6 +43,8 @@ export default function GameCard({
   explanationLabel,
   correctLabel,
   incorrectLabel,
+  scenarioLabel,
+  chooseLabel,
 }: GameCardProps) {
   /* Safe lookup — works for any category string returned from Supabase */
   const meta = CATEGORY_META[question.category] ?? FALLBACK_META;
@@ -73,6 +79,21 @@ export default function GameCard({
 
       {/* ── Question text ── */}
       <div className="mb-8 rounded-3xl bg-gradient-to-br from-violet-50 to-pink-50 border border-violet-100 p-6 md:p-8">
+        {/* Scenario framing labels */}
+        {(scenarioLabel || chooseLabel) && (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {scenarioLabel && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-violet-200 px-2.5 py-0.5 text-xs font-bold text-violet-700">
+                🎭 {scenarioLabel}
+              </span>
+            )}
+            {chooseLabel && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-white border border-pink-200 px-2.5 py-0.5 text-xs font-semibold text-pink-700">
+                ✏️ {chooseLabel}
+              </span>
+            )}
+          </div>
+        )}
         <p className="text-lg md:text-xl font-bold leading-relaxed text-gray-800">
           {question.question[language]}
         </p>
@@ -115,8 +136,7 @@ export default function GameCard({
               )}
             >
               <span className="text-xl">{isCorrect ? '🎉' : '😔'}</span>
-              {isCorrect ? correctLabel : incorrectLabel}
-              {isCorrect && ' +10 pts'}
+              <span className="leading-snug">{isCorrect ? correctLabel : incorrectLabel}</span>
             </motion.div>
 
             {/* Explanation box — only when text is present (nullable in DB) */}

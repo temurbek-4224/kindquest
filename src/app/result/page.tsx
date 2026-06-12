@@ -19,6 +19,72 @@ import { cn } from '@/lib/utils';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error' | 'no-table';
 
+/* ── Daraja va mukofot (Level & Reward) system ─────────────── */
+interface LevelInfo {
+  level:          { uz: string; ru: string; en: string };
+  emoji:          string;
+  headerColor:    string;
+  badges:         { icon: string; label: { uz: string; ru: string; en: string } }[];
+  recommendation: { uz: string; ru: string; en: string };
+}
+
+const LEVELS: LevelInfo[] = [
+  {
+    level:       { uz: 'Hurmatli qahramon',         ru: 'Уважаемый герой',        en: 'Respected Hero'       },
+    emoji:       '🏆',
+    headerColor: 'from-amber-400 to-orange-500',
+    badges: [
+      { icon: '🏆', label: { uz: "Odobli bola kubogi",    ru: 'Кубок воспитанного',          en: 'Etiquette Trophy'   } },
+      { icon: '⭐', label: { uz: "Hurmat yulduzi",        ru: 'Звезда уважения',              en: 'Star of Respect'    } },
+      { icon: '💖', label: { uz: "Mehribonlik belgisi",   ru: 'Знак доброты',                 en: 'Kindness Badge'     } },
+      { icon: '🌈', label: { uz: "Yaxshi xulq darajasi", ru: 'Уровень хорошего поведения',   en: 'Good Conduct Level' } },
+    ],
+    recommendation: {
+      uz: "Siz hurmat, mehribonlik va odob qoidalarini yaxshi tushundingiz. Endi bu odatlarni kundalik hayotda ham qo'llashga harakat qiling.",
+      ru: 'Вы отлично усвоили правила уважения, доброты и этикета. Старайтесь применять эти привычки в повседневной жизни.',
+      en: 'You understood the rules of respect, kindness and etiquette well. Try to apply these habits in your daily life.',
+    },
+  },
+  {
+    level:       { uz: "Mehribon do'st",             ru: 'Добрый друг',            en: 'Kind Friend'          },
+    emoji:       '💖',
+    headerColor: 'from-pink-400 to-rose-500',
+    badges: [
+      { icon: '💖', label: { uz: "Mehribonlik belgisi",   ru: 'Знак доброты',                 en: 'Kindness Badge'     } },
+      { icon: '🌈', label: { uz: "Yaxshi xulq darajasi", ru: 'Уровень хорошего поведения',   en: 'Good Conduct Level' } },
+    ],
+    recommendation: {
+      uz: "Siz yaxshi natija ko'rsatdingiz. Ayrim vaziyatlarda yanada e'tiborli bo'lsangiz, haqiqiy hurmatli qahramonga aylanasiz.",
+      ru: 'Вы показали хороший результат. Будьте внимательнее в некоторых ситуациях — и станете настоящим героем.',
+      en: 'You showed a good result. Being more careful in some situations will turn you into a true respected hero.',
+    },
+  },
+  {
+    level:       { uz: "Odobni o'rganayotgan bola",  ru: 'Изучающий этикет',       en: 'Learning Etiquette'   },
+    emoji:       '🌱',
+    headerColor: 'from-emerald-400 to-teal-500',
+    badges: [
+      { icon: '🌈', label: { uz: "Yaxshi xulq darajasi", ru: 'Уровень хорошего поведения',   en: 'Good Conduct Level' } },
+    ],
+    recommendation: {
+      uz: "Siz odob qoidalarini o'rganish yo'lidasiz. Tushuntirishlarni diqqat bilan o'qib, qayta urinib ko'ring.",
+      ru: 'Вы на пути к изучению правил этикета. Внимательно читайте объяснения и попробуйте ещё раз.',
+      en: 'You are on the path to learning etiquette rules. Read the explanations carefully and try again.',
+    },
+  },
+];
+
+function getLevelInfo(pct: number): LevelInfo {
+  if (pct >= 80) return LEVELS[0]!;
+  if (pct >= 40) return LEVELS[1]!;
+  return LEVELS[2]!;
+}
+
+const REWARD_UI = {
+  title: { uz: 'Daraja va mukofot',  ru: 'Уровень и награда',   en: 'Level & Reward'      },
+  rec:   { uz: '💡 Tavsiya',         ru: '💡 Рекомендация',      en: '💡 Recommendation'   },
+};
+
 /* ── Localised strings ──────────────────────────────────── */
 const UI = {
   score:       { uz: 'Sizning ballingiz',   ru: 'Ваш счёт',             en: 'Your Score'      },
@@ -249,6 +315,54 @@ export default function ResultPage() {
             />
           </div>
         </motion.div>
+
+        {/* ── Daraja va mukofot ───────────────────────────── */}
+        {(() => {
+          const lvl = getLevelInfo(percentage);
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.76 }}
+              className="mb-8 overflow-hidden rounded-3xl bg-white border border-violet-100 shadow-lg shadow-violet-50/60"
+            >
+              {/* Header */}
+              <div className={cn('bg-gradient-to-br px-6 py-5 text-white text-center', lvl.headerColor)}>
+                <div className="text-4xl mb-2">{lvl.emoji}</div>
+                <p className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">
+                  {REWARD_UI.title[l]}
+                </p>
+                <h3 className="text-xl font-extrabold">{lvl.level[l]}</h3>
+              </div>
+
+              <div className="p-5">
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 justify-center mb-4">
+                  {lvl.badges.map((b, bi) => (
+                    <motion.div
+                      key={bi}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.86 + bi * 0.1, type: 'spring', stiffness: 350 }}
+                      className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-violet-50 to-pink-50 border border-violet-100 px-3 py-2"
+                    >
+                      <span className="text-lg">{b.icon}</span>
+                      <span className="text-xs font-bold text-gray-700">{b.label[l]}</span>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Moral recommendation */}
+                <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-pink-50 border border-violet-100 p-4">
+                  <p className="text-xs font-bold text-violet-600 uppercase tracking-wide mb-1.5">
+                    {REWARD_UI.rec[l]}
+                  </p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{lvl.recommendation[l]}</p>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
 
         {/* ── Action buttons ──────────────────────────────── */}
         <motion.div
